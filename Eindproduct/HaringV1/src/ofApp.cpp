@@ -1,16 +1,16 @@
 #include "ofApp.h"
-#define WIDTH 360
-#define HEIGHT 240
+#define WIDTH 640
+#define HEIGHT 480
 
 //---------------------
 void ofApp::setup() {
 
 	//Arduino setup
 	ofAddListener(arduino.EInitialized, this, &ofApp::setupArduino);
-	arduino.connect("COM9");
+	arduino.connect("COM8");
 	arduino.sendFirmwareVersionRequest();
 
-	pinAddButton = 6;
+	pinWhiteButton = 6;
 	pinRedButton = 3;
 	pinGreenButton = 4;
 	pinBlueButton = 5;
@@ -18,18 +18,20 @@ void ofApp::setup() {
 	//Cam setup
 	grabber.listDevices();
 	grabber.setDeviceID(0);
-	grabber.initGrabber(WIDTH, HEIGHT);
+	grabber.initGrabber(640, 480);
 	grabber.setDesiredFrameRate(30);
-	
-	colorImg.allocate(WIDTH, HEIGHT);
-	grayImage.allocate(WIDTH, HEIGHT);
-	grayBg.allocate(WIDTH, HEIGHT);
-	grayDiff.allocate(WIDTH, HEIGHT);
+
+	colorImg.allocate(640, 480);
+	grayImage.allocate(640, 480);
+	grayBg.allocate(640, 480);
+	grayDiff.allocate(640, 480);
+
 
 	//"Photo" setup
 	bLearnBackground = true;
 	thresholdValue = 100;
 	drawDebug = true;
+	takePhoto = false;
 	red = 0;
 	green = 0;
 	blue = 0;
@@ -50,12 +52,19 @@ void ofApp::update() {
 	arduino.update();
 	grabber.update();
 
+	for (int i = 0; i < silhouetteList.size(); i++) {
+		silhouetteList[i].update();
+		if (silhouetteList[i].alpha <= 0) {
+			silhouetteList.erase(silhouetteList.begin() + i);
+		}
+	}
+
 	if (grabber.isFrameNew()) {
 		colorImg.setFromPixels(grabber.getPixels());
 		grayImage = colorImg;
 
 		if (bLearnBackground == true) {
-			grayBg = grayImage; 
+			grayBg = grayImage;
 			bLearnBackground = false;
 		}
 
@@ -65,10 +74,24 @@ void ofApp::update() {
 
 			//findContours (Source image, min pixels, max pixels, nBlobs, fillgaps)
 			contourFinder.findContours(grayDiff, 500, 10000000, 1, true);
-			takePhoto = false;
+			if (contourFinder.blobs.size() > 0) {
+			auto blob = contourFinder.blobs[0];
+			
+				ofLog() << "Push" << endl;
+				for (int i = 0; i < blob.nPts; i++) {
+					ofPoint point(blob.pts[i].x, 0 + blob.pts[i].y);
+					shape.push_back(point);
+
+				}
+				silhouette.newSilhouette(shape, red, green, blue);
+				silhouetteList.push_back(silhouette);
+				takePhoto = false;
+			}
 		}
 	}
+
 }
+
 
 //---------------------
 void ofApp::draw() {
@@ -87,27 +110,18 @@ void ofApp::draw() {
 		// Draw each blob individually from the blobs vector
 		int numBlobs = contourFinder.nBlobs;
 		for (int i = 0; i < numBlobs; i++) {
-			contourFinder.blobs[i].draw(WIDTH+20, HEIGHT+20);
+			contourFinder.blobs[i].draw(WIDTH + 20, HEIGHT + 20);
 		}
 	}
 	else {
 		ofBackground(0);
-		grayDiff.draw(0, 0);  // The thresholded difference image
-		ofNoFill();
-		ofDrawRectangle(0, 0, WIDTH, HEIGHT);
-		grayDiff.draw(0, 0);
-		
-		ofFill();
-		ofSetColor(red, green, blue);
-			ofBeginShape();
-			for (int i = 0; i < blob->nPts; i++) {
-				ofVertex(0 + blob->pts[i].x, 0 + blob->pts[i].y);
-			}
-			ofEndShape(true);
+		for (int i = 0; i < silhouetteList.size(); i++) {
+			silhouetteList[i].draw();
 		}
-
 	}
 }
+
+
 
 
 //---------------------
@@ -118,6 +132,7 @@ void ofApp::keyPressed(int key) {
 
 	if (key == 'v') {
 		takePhoto = true;
+		ofLog() << "Take Photo: " << takePhoto << endl; 
 	}
 
 	if (key == 'g' && drawDebug) {
@@ -138,7 +153,7 @@ void ofApp::setupArduino(const int& version) {
 		<< arduino.getMinorFirmwareVersion() << endl;
 
 	//Setup pins
-	arduino.sendDigitalPinMode(pinAddButton, ARD_INPUT);
+	arduino.sendDigitalPinMode(pinWhiteButton, ARD_INPUT);
 	arduino.sendDigitalPinMode(pinRedButton, ARD_INPUT);
 	arduino.sendDigitalPinMode(pinGreenButton, ARD_INPUT);
 	arduino.sendDigitalPinMode(pinBlueButton, ARD_INPUT);
@@ -152,10 +167,10 @@ void ofApp::setupArduino(const int& version) {
 
 void ofApp::digitalPinChanged(const int& pin) {
 
-	if (arduino.getDigital(pinAddButton) == 1) {
+	if (arduino.getDigital(pinWhiteButton) == 1) {
 		takePhoto = true;
-		//silhouette.newSilhouette(red, green, blue); 
 		ofLog() << "Take Photo" << endl;
+
 	}
 
 	if (arduino.getDigital(pinRedButton) == 1) {
@@ -166,14 +181,12 @@ void ofApp::digitalPinChanged(const int& pin) {
 		ofLog() << "Red: " << red << endl;
 	}
 
-
 	if (arduino.getDigital(pinGreenButton) == 1) {
 		green += colorMod;
 		if (green > 255) green = 0;
 		arduino.sendPwm(pinGreenLed, 255 - green);
 		ofLog() << "Green: " << green << endl;
 	}
-
 
 	if (arduino.getDigital(pinBlueButton) == 1) {
 		blue += colorMod;

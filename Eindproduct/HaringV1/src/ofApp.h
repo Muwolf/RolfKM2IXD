@@ -1,7 +1,7 @@
 #pragma once
 #include "ofMain.h"
 #include "ofxOpenCv.h"
-//#include "Silhouette.h"
+#include "Silhouette.h"
 
 class ofApp : public ofBaseApp {
 public:
@@ -40,15 +40,20 @@ public:
 
 	//Silhouette
 
-	//vector<Silhouette> silhouetteList;
-	//Silhouette silhouette; 
+	vector<ofPoint>			shape;
+	vector<Silhouette>		silhouetteList;
+	Silhouette				silhouette; 
 
 	//Arduino
 
-	int						pinAddButton;
+	int						pinWhiteButton;
 	int						pinRedButton;
 	int						pinGreenButton;
 	int						pinBlueButton;
+	bool					isWhitePressed;
+	bool					isRedPressed;
+	bool					isGreenPressed;
+	bool					isBluePressed; 
 private:
 	ofArduino				arduino;
 	void					setupArduino(const int& version);

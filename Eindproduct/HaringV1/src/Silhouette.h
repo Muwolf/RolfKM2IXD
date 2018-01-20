@@ -1,13 +1,19 @@
 #pragma once
-#include "ofApp.h"
+#include "ofMain.h"
 class Silhouette 
 	{
 public:
 
-	void newSilhouette(float _colorR, float _colorG, float _colorB);
+	void					newSilhouette(vector<ofPoint> _shape, float _colorR, float _colorG, float _colorB);
 
-	void update();
-	void draw();
+	float					red;
+	float					green; 
+	float					blue; 
+	vector<ofPoint>			shape;
+	float					alpha; 
+
+	void					update();
+	void					draw();
 
 	Silhouette();
 };
