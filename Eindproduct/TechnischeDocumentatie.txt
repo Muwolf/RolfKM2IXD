@@ -1,0 +1,37 @@
+Technische Documentatie
+Kernmodule 2, ruimtelijk ontwerp. 
+
+Voor dit project heb ik een installatie gebrouwd waarbij een contour van een persoon genomen werd, en vervolgens geprojecteerd werd tegen een muur in een door de gebruiker ingestelde kleur.
+Hiervoor was nodig;
+
+Fysieke componenten;
+- Webcam om contouren te tracken.
+- Beamer
+- Een interface voor de gebruiker om een keur te kiezen.
+
+Digitale componenten;
+- Contourtracking met OpenCV
+- Arduino input voor de fysieke knoppen
+- Aparte class voor de silhouetten.
+
+Webcam en Beamer
+
+Ik ben voor een losse webcam gegaan in plaats van de webcam van mijn laptop omdat ik mijn laptop niet als belangrijk onderdeel in de interactie wilde hebben, en een losse webcam kan ik op elke hoogte neer zetten. Daarnaast kwam ik er achter dat als ik weinig licht had de contourtracker van openCV soms wat moeite had met de voorgrond van de achtergrond onderscheiden, daarom heb ik een webcam gepakt met een paar felle LED's naast de lens. Deze LEDS zijn eigenlijk bedoelt om iemand uit te lichten die ongeveer een meter verder op zit, bij dit project staan mensen verder weg, maar ik merkte dat het kleine beetje al wel een wereld van verschil maakte. Als het probleem zich echt bleef voor doen dan had ik waarschijnlijk een witte achtergrond gepakt waar ik een bouwlamp op gericht had. Op die manier heb je geen direct licht in de webcam, en heeft de gebruiker geen last van een lamp die in zijn of haar ogen schijnt. Maar je krijgt wel een goed verschil tussen de voor- en achtergrond.
+Voor de beamer wilde alleen de schaduw van de kijker niet over het beeld van de beamer viel hierom heb ik een short throw beamer gepakt.
+
+Interface
+
+Ik heb voor een fysieke interface gekozen, voornamelijk omdat een grote, lichtgevende arcade knop meer uitlokt om mee te interacteren dan een toetsenbord of een touchpad. De 4 knoppen zijn aangesloten op een Arduino nano, en in de grootste knop zit een RGB-LED. Deze LED is er om de kleur die de gebruiker gekozen heeft weer te geven. De kleur komt niet 1 op 1 overeen, donkergrijs bijvoorbeeld ziet er uit als wit omdat alle 3 de kleuren even hard aanstaan, maar dit voegt wel een speels element toe aan het algemene systeem. RGB-LED was even een probleem, tot ik er achterkwam dat ik een Common-anode LED had, en daarom de waardes moest omdraaien.
+ 
+Contour tracking.
+
+Ik heb hiervoor gebruik gemaakt van een background subtraction. Je neemt de achtergrond die leeg is en slaat dat beeld op. Vervolgens vergelijk je dat beeld met het huidige camera beeld. De pixels die anders zijn vormen de blob. Dit werkt maar half. Als het licht verandert omdat het bijvoorbeeld later op de dag is en de zon anders staat is de kleurtoon van de muur anders, en dit word gedetecteerd. Als je vervolgens de marge aanpast is de kans groot dat bijvoorbeeld een zwart shirt niet gezien word op een witte achtergrond (de HUE is namelijk hetzelfde, ook al is de value totaal anders) Een oplossing had kunnen zijn om een greenscreen te gebruiken, maar ik vond dat af doen aan het algehele concept. Een gigantische greenscreen geeft te duidelijk dat er daar iets te doen is, en ik wilde het subtiel houden.
+
+Arduino code
+
+Gebruik gemaakt van de standaard firmata, de knoppen zijn uitgelezen met digitalRead, en er werd een PWM value gestuurd naar de RGB-LED. De PWM-waardes in mijn code worden dus omgedraaid omdat ik een Common-Anode RGB-LED gebruik.
+
+Aparte class voor Silhouetten
+
+Deze code was deels overgenomen uit de bounching balls code uit blok een. Het is een simpele class waar een functie in zit die een nieuw Silhouet maakt, en in de OfApp in een vector gezet word zodat ze makkelijk in de update en draw functie mee kunnen. Dit was ook het punt waar ik op vast liep. Het is erg lastig om de blob die gemaakt is, wat een vector met punten is, naar een andere class te sturen en vervolgens de tekenen. Ik heb zowel gebruik gemaakt van beginShape() en endShape(), als de losse punten uit de vector los te tekenen, maar beide hadden geen succes.
+
